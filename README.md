@@ -25,7 +25,8 @@ The stack doesn&#39;t shut down itself and if left in place resources will be co
 # Usage
 AWS console  
 By using "create stack" UI functionality.  
-IMPORTANT: don't forget to check "I acknowledge that AWS CloudFormation might create IAM resources." in Capabilities section at the very end.
+IMPORTANT: don't forget to check "I acknowledge that AWS CloudFormation might create IAM resources." in Capabilities section at the very end.   
+
 AWS CLI example   
 aws cloudformation create-stack --stack-name my-synthea-stack-01 --template-body file://../synthea-patient-generation-template-v02.yaml --parameters ParameterKey=InstanceTypeAndSize,ParameterValue=t2.medium  ParameterKey=KeyName,ParameterValue=<YOUR-KEY-PAIR> ParameterKey=MySyntheaConfigurationFile,ParameterValue=s3://<URI-FOR-SYNTHEA-PROPERTY-FILE> ParameterKey=MySyntheaGnerationParameters,ParameterValue="-s 21 -p 10 " ParameterKey=MySyntheaPopulationOutput,ParameterValue=s3://<URI-FOR-SYNTHEA-OUTPUT> --capabilities CAPABILITY_IAM   
 
