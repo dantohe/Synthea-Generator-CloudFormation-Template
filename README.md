@@ -56,7 +56,7 @@ The S3 location (bucket/path) where Synthea generated population will be output.
 
 # Infrastructure (stack) created
 The following blueprint represents the resources created.
-![](RackMultipart20210422-4-1hi9i05_html_9aa28d7bc326120e.png)
+![](images/template1-designer.png)
 
 The ec2 instance will:
 - install java, git
