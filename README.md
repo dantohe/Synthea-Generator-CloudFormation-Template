@@ -3,23 +3,15 @@
 # Description
 
 This is a simple AWS CloudFormation template that will create as stack that will generate a synthetic set of patients using Synthea Patient Generator tool.
-
 This template takes advantage of Infrastructure-as-service paradigm to provide infrastructure functionality through simple code implementation.
 
 # Important notes
-
 ## Regions
-
 The stack has been designed to work in the following AWS US regions:
-
-us-east-1
-
-us-east-2
-
-us-west-1
-
-us-west-2
-
+- us-east-1
+- us-east-2
+- us-west-1
+- us-west-2
 For addition regions augment the region/ami-id map:
 
 Mappings:
