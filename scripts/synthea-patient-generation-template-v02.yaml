@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Create a stack that based on a set of paramaters will generate a cohort of synthetic patients using Synthea Patient Genrator.
+
+Parameters:
+  InstanceTypeAndSize:
+    Description: "AWS Instance type and size to be used for deploying Synthea.\nFrom my experience, Synthea requires at least 4GB memory.\nPlease see https://aws.amazon.com/ec2/instance-types/ "
+    Default : "t2.medium"
+    Type: String
+  MySyntheaGnerationParameters:
+    Description: "Please read (look for example parameters) https://github.com/synthetichealth/synthea/blob/master/README.md. ATTENTION: ENTER ONLY THE PARAMETERS - DO NOT ENTER run_syntea part - PLEASE SEE THE DEFAULT PARAMETERS BELOW."
+    Default: '-s 21 -p 10 Utah "Salt Lake City"'
+    Type: String
+  MySyntheaConfigurationFile:
+    Description: "The location of Synthea configuration file. See https://github.com/synthetichealth/synthea/wiki/Common-Configuration"
+    Default : "s3://<whatver-s3-bucket-path>/synthea.properties"
+    Type: String
+  MySyntheaPopulationOutput:
+    Description: "The S3 location (bucket/path) where Synthea generated population will be output."
+    Default : "s3://<whatver-s3-bucket-path>/synthea-output/"
+    Type: String
+  KeyName:
+    Description: "An existing key pair needs to be generated and used to SSH into the EC2 instance.\nFor details https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html"
+    Type: AWS::EC2::KeyPair::KeyName
+  
+#the mappings for ec2 AMI (currently contains only US regions)
+Mappings:
+  RegionMap:
+    us-east-1:
+      AMI: ami-0742b4e673072066f
+    us-east-2:
+      AMI: ami-05d72852800cbf29e
+    us-west-1:
+      AMI: ami-0577b787189839998
+    us-west-2:
+      AMI: ami-0518bb0e75d3619ca
+
+Resources:
+  Ec2Instance:
+    Type: AWS::EC2::Instance
+    Metadata: 
+      AWS::CloudFormation::Init:
+        config: 
+          packages: 
+            yum:
+              httpd: []
+              java-1.8.0-openjdk-devel.x86_64: []
+              php: []
+          files: 
+            /var/www/html/index.php:
+              content: !Sub |
+                <?php print "Hello!"; ?>
+          services: 
+            sysvinit:
+              httpd:
+                enabled: true
+                ensureRunning: true
+    Properties:
+      InstanceType: !Ref InstanceTypeAndSize
+      ImageId: 
+        Fn::FindInMap:
+        - RegionMap
+        - !Ref AWS::Region
+        - AMI
+      SecurityGroups: 
+        - !Ref MySecurityGroup02
+      KeyName: !Ref KeyName
+      IamInstanceProfile:
+        !Ref RootInstanceProfile
+      Tags:
+        - Key: Name
+          Value: !Join [ "-", [ instace,by,!Ref AWS::StackName,!Ref AWS::Region]]  
+        - Key: account-region
+          Value: !Ref AWS::Region 
+        - Key: account-id
+          Value: !Ref AWS::AccountId           
+        - Key: intrinsic-function-join
+          Value: !Join [ " ", [ this,is,a,sequnce,of,characters] ]
+      UserData:
+        'Fn::Base64': 
+          !Sub |
+            #!/bin/bash -xe            
+            # Ensure AWS CFN Bootstrap is the latest
+            yum install -y aws-cfn-bootstrap
+            yum install -y java-1.8.0-openjdk-devel.x86_64
+            yum install -y git
+            mkdir /opt/synthea
+            cd /opt/synthea
+            git clone https://github.com/synthetichealth/synthea.git
+            mkdir -p /opt/synthea/synthea/output
+            cd /opt/synthea/synthea
+            # ./gradlew build check test
+            # mkdir output-from-$(date +"%m-%d-%Y-%H-%M-%S")
+            aws s3 cp ${MySyntheaConfigurationFile} /opt/synthea/synthea/src/main/resources/synthea.properties > /opt/synthea/synthea/output/_synthea_config_out.log
+            ./run_synthea ${MySyntheaGnerationParameters} > /opt/synthea/synthea/output/_out.log
+            aws s3 cp /opt/synthea/synthea/output ${MySyntheaPopulationOutput}output-from-$(date +"%m-%d-%Y-%H-%M-%S") --recursive 
+            # Install the files and packages from the metadata
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance  --region ${AWS::Region}
+  MySecurityGroup02:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+  RootRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+  RolePolicies:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: root
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: "*"
+          Resource: "*"
+      Roles:
+      - !Ref RootRole
+  RootInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - !Ref RootRole
+  
+Outputs:
+  ServerPublicDns:
+    Value: !GetAtt
+      - Ec2Instance
+      - PublicDnsName
+  ConnectToInstance:
+    Description: The ssh linux command to use in irdor to connect to the Synthea instance (it assumes the key pair is located locally in ~/).
+    Value: !Join [ "", ["ssh -i ~/", !Ref KeyName, " ec2-user@", !GetAtt Ec2Instance.PublicDnsName] ]
