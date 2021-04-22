@@ -1,0 +1,1 @@
+# Synthea-Generator-CloudFormation-Template
