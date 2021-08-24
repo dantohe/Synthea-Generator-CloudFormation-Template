@@ -91,7 +91,7 @@ Resources:
             # ./gradlew build check test
             # mkdir output-from-$(date +"%m-%d-%Y-%H-%M-%S")
             aws s3 cp ${MySyntheaConfigurationFile} /opt/synthea/synthea/src/main/resources/synthea.properties > /opt/synthea/synthea/output/_synthea_config_out.log
-            ./run_synthea ${MySyntheaGnerationParameters} > /opt/synthea/synthea/output/_out.log
+            ./run_synthea --stacktrace ${MySyntheaGnerationParameters} > /opt/synthea/synthea/output/_out.log
             aws s3 cp /opt/synthea/synthea/output ${MySyntheaPopulationOutput}output-from-$(date +"%m-%d-%Y-%H-%M-%S") --recursive 
             # Install the files and packages from the metadata
             /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance  --region ${AWS::Region}
