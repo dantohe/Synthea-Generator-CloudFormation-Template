@@ -12,7 +12,7 @@ The stack has been designed to work in the following AWS US regions:
 - us-east-2
 - us-west-1
 - us-west-2   
-For addition regions augment the region/ami-id map:
+For additional regions augment the region/ami-id map:
 Mappings:
   RegionMap:
     \&lt;region\&gt;:
