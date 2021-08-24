@@ -2,7 +2,7 @@
 
 # Description
 
-This is a simple AWS CloudFormation template that will create as stack that will generate a synthetic set of patients using Synthea Patient Generator tool.
+This is a simple AWS CloudFormation template that will create a stack that will generate a synthetic set of patients using Synthea Patient Generator tool.
 This template takes advantage of Infrastructure-as-service paradigm to provide infrastructure functionality through simple code implementation.
 
 # Important notes
